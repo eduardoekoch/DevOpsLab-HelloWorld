@@ -1,24 +1,55 @@
-# Linguagem Utilizada para Desenvolver a Aplicação
-language: python
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version you desire here
+      # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
+      - image: circleci/python:3.6.1
 
-# Versão que a aplicação suporta.
-python:
-  - "3.6.3"
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      # - image: circleci/postgres:9.4
 
-# Faz a instalação com Sudo, para ter privilégio de Super Usuário.
-sudo: required
+    working_directory: ~/repo
 
-# Instalação de Módulos que são necessários para a Aplicação.
-install:
-  - pip install flask
+    steps:
+      - checkout
 
-# Defini o script de Teste que deve rodar toda vez que o código for alterado.
-script:
-  - python test.py
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "requirements.txt" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
 
-# Defini que o processo de Deploy será na Plataforma Heroku. É necessário informar o nome da APP criada no Heroku
-deploy:
-  provider: heroku
-  api-key: 
-    secure: $HEROKU_API_KEY
-  app: app4linux
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+
+      - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
+
+      # run tests!
+      # this example uses Django's built-in test-runner
+      # other common Python testing frameworks include pytest and nose
+      # https://pytest.org
+      # https://nose.readthedocs.io
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            python manage.py test
+
+      - store_artifacts:
+          path: test-reports
+          destination: test-reports
